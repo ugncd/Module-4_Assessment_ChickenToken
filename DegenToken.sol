@@ -13,7 +13,7 @@ The smart contract should have the following functionality:
 pragma solidity ^0.8.0;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
-import "./ownable.sol";
+import "./Ownable.sol";
 
 contract DegenToken is ERC20, Ownable {
     mapping(uint256 => uint256) public itemPrices;
