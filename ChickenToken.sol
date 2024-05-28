@@ -13,19 +13,19 @@ The smart contract should have the following functionality:
 pragma solidity ^0.8.0;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
-import "./Ownable.sol";
+import "./Chicks.sol";
 
 contract DegenToken is ERC20, Ownable {
     mapping(uint256 => uint256) public itemPrices;
 
     event ItemRedeemed(address indexed player, uint256 indexed itemId, uint256 amount);
 
-    constructor(uint256 initialSupply) ERC20("Degen", "DGN") {
+    constructor(uint256 initialSupply) ERC20("Chickens", "chicks") {
         _mint(msg.sender, initialSupply * 10 ** decimals());
-        itemPrices[1] = 200; // Item 1: Potion - Price: 200 tokens
-        itemPrices[2] = 400; // Item 2: Super Potion - Price: 400 tokens
-        itemPrices[3] = 1000; // Item 3: Hyper Potion - Price: 1000 tokens
-        itemPrices[4] = 2000; // Item 4: Full Restore - Price: 2000 tokens
+        itemPrices[1] = 3500; // Item 1: 1 Piece Chicks - Price: 3500 tokens
+        itemPrices[2] = 4500; // Item 2: 2 Pieces Chicks - Price: 4500 tokens
+        itemPrices[3] = 10000; // Item 3: 3 Pieces Chicks - Price: 10000 tokens
+        itemPrices[4] = 20000; // Item 4: 4 Pieces Chicks - Price: 20000 tokens
     }
 
     function mint(address account, uint256 amount) external onlyOwner {
@@ -39,7 +39,7 @@ contract DegenToken is ERC20, Ownable {
     function setItemPrice(uint256 itemId, uint256 price) external onlyOwner {
         itemPrices[itemId] = price;
     }
-
+    
     function redeemItem(uint256 itemId) external {
         // Ensure item price is set and player has enough balance
         require(itemPrices[itemId] > 0, "Item price not set");
@@ -48,5 +48,16 @@ contract DegenToken is ERC20, Ownable {
         // Transfer tokens from player to owner (in-game store)
         _transfer(msg.sender, owner, itemPrices[itemId]);
         emit ItemRedeemed(msg.sender, itemId, itemPrices[itemId]);
+        
+    }
+
+     function getItemPrice(uint256 itemId) external view returns (uint256) {
+        require(itemPrices[itemId] > 0, "Item price not set");
+        return itemPrices[itemId];
+    }
+    
+     function burnAllTokens(address account) external onlyOwner {
+        uint256 balance = balanceOf(account);
+        _burn(account, balance);
     }
 }
