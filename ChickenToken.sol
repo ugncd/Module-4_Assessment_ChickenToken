@@ -13,14 +13,16 @@ The smart contract should have the following functionality:
 pragma solidity ^0.8.0;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
-
+import "./Chicks.sol";
 
 contract Chickens is ERC20, Ownable {
 
     mapping(uint256 => uint256) public itemPrices;
 
-    constructor() ERC20("Chickens", "CHICKS") Ownable(msg.sender) {
+    event ItemRedeemed(address indexed player, uint256 indexed itemId, uint256 amount);
+
+    constructor(uint256 initialSupply) ERC20("Chickens", "CHICKS") {
+        _mint(msg.sender, initialSupply * 10 ** decimals());
         itemPrices[1] = 35; // Item 1: 1 Piece Chicks - Price: 35 tokens
         itemPrices[2] = 45; // Item 2: 2 Pieces Chicks - Price: 45 tokens
         itemPrices[3] = 90; // Item 3: 3 Pieces Chicks - Price: 90 tokens
@@ -31,11 +33,6 @@ contract Chickens is ERC20, Ownable {
         _mint(_to, amount);
     }
 
-    function sizes() external pure returns (string memory) {
-        string memory saleOptions = "itemPrices: {1} itemPrices: {2} itemPrices: {3} itemPrices: {4}";
-        return saleOptions;
-    }
-
     function burn(uint256 amount) public {
         _burn(msg.sender, amount);
     }
@@ -44,11 +41,14 @@ contract Chickens is ERC20, Ownable {
         itemPrices[itemId] = price;
     }
     
-    function redeem(uint256 _amount) public {
-        require(itemPrices[_amount] > 0, "Item price not set");
-        require(_amount <= 5, "Item is invalid");
-        require(balanceOf(msg.sender) >= itemPrices[_amount], "Insufficient balance");
-        transfer(owner(), itemPrices[_amount]); 
+    function redeemItem(uint256 itemId) external {
+        // Ensure item price is set and player has enough balance
+        require(itemPrices[itemId] > 0, "Item price not set");
+        require(balanceOf(msg.sender) >= itemPrices[itemId], "Insufficient balance");
+
+        // Transfer tokens from player to owner (in-game store)
+        _transfer(msg.sender, owner, itemPrices[itemId]);
+        emit ItemRedeemed(msg.sender, itemId, itemPrices[itemId]);
     }
 
     function burnAllTokens(address account) public onlyOwner {
