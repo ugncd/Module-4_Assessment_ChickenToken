@@ -12,47 +12,55 @@ The smart contract should have the following functionality:
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
-import "./Chicks.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Chickens is ERC20, Ownable {
+    using SafeMath for uint256;
 
     mapping(uint256 => uint256) public itemPrices;
 
+    event ItemPriceSet(uint256 indexed itemId, uint256 price);
     event ItemRedeemed(address indexed player, uint256 indexed itemId, uint256 amount);
 
-    constructor(uint256 initialSupply) ERC20("Chickens", "CHICKS") {
+    constructor(uint256 initialSupply) ERC20("Chickens", "CHICKS") Ownable(msg.sender) {
         _mint(msg.sender, initialSupply * 10 ** decimals());
-        itemPrices[1] = 35; // Item 1: 1 Piece Chicks - Price: 35 tokens
-        itemPrices[2] = 45; // Item 2: 2 Pieces Chicks - Price: 45 tokens
-        itemPrices[3] = 90; // Item 3: 3 Pieces Chicks - Price: 90 tokens
-        itemPrices[4] = 100; // Item 4: 4 Pieces Chicks - Price: 100 tokens
+        _setItemPrice(1, 35); // Item 1: 1 Piece Chicks - Price: 35 tokens
+        _setItemPrice(2, 45); // Item 2: 2 Pieces Chicks - Price: 45 tokens
+        _setItemPrice(3, 90); // Item 3: 3 Pieces Chicks - Price: 90 tokens
+        _setItemPrice(4, 100); // Item 4: 4 Pieces Chicks - Price: 100 tokens
     }
 
-    function mint(address _to, uint256 amount) public onlyOwner {
+    function mint(address _to, uint256 amount) external onlyOwner {
         _mint(_to, amount);
     }
 
-    function burn(uint256 amount) public {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    function setItemPrice(uint256 itemId, uint256 price) public onlyOwner {
-        itemPrices[itemId] = price;
+    function setItemPrice(uint256 itemId, uint256 price) external onlyOwner {
+        _setItemPrice(itemId, price);
     }
-    
+
     function redeemItem(uint256 itemId) external {
-        // Ensure item price is set and player has enough balance
-        require(itemPrices[itemId] > 0, "Item price not set");
-        require(balanceOf(msg.sender) >= itemPrices[itemId], "Insufficient balance");
+        uint256 price = itemPrices[itemId];
+        require(price > 0, "Item price not set");
+        require(balanceOf(msg.sender) >= price, "Insufficient balance");
 
-        // Transfer tokens from player to owner (in-game store)
-        _transfer(msg.sender, owner, itemPrices[itemId]);
-        emit ItemRedeemed(msg.sender, itemId, itemPrices[itemId]);
+        _transfer(msg.sender, owner(), price);
+        emit ItemRedeemed(msg.sender, itemId, price);
     }
 
-    function burnAllTokens(address account) public onlyOwner {
+    function burnAllTokens(address account) external onlyOwner {
         uint256 balance = balanceOf(account);
         _burn(account, balance);
+    }
+
+    function _setItemPrice(uint256 itemId, uint256 price) internal {
+        require(price > 0, "Price must be greater than zero");
+        itemPrices[itemId] = price;
+        emit ItemPriceSet(itemId, price);
     }
 }
